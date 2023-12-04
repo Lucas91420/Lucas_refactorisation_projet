@@ -6,7 +6,7 @@ use App\Entity\Game;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
+/** A SUPPRIMER !!
  * @extends ServiceEntityRepository<Game>
  *
  * @method Game|null find($id, $lockMode = null, $lockVersion = null)
@@ -39,7 +39,7 @@ class GameRepository extends ServiceEntityRepository
         }
     }
 
-//    /**
+//    /** A SUPPRIMER !!
 //     * @return Game[] Returns an array of Game objects
 //     */
 //    public function findByExampleField($value): array
