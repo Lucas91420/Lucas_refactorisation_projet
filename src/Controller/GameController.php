@@ -252,18 +252,6 @@ class GameController extends AbstractController
 
                 $entityManager->flush();
 
-
-
-
-
-
-
-
-
-
-
-
-
                 if($game->getPlayLeft() !== null){
 
                     switch($data['choice']){
