@@ -78,7 +78,7 @@ public function inviteToGame(Request $request, EntityManagerInterface $entityMan
     $playerLeft = $entityManager->getRepository(User::class)->find($currentUserId);
 
     if ($playerLeft === null) {
-        return new JsonResponse('Player not found', 401);
+        return new JsonResponse('User not found', 401);
     }
 
     $game = $entityManager->getRepository(Game::class)->find($id);
@@ -105,7 +105,7 @@ public function inviteToGame(Request $request, EntityManagerInterface $entityMan
 
         return $this->json($game, 200, ['Content-Type' => 'application/json;charset=UTF-8']);
     } else {
-        return new JsonResponse('Player not found', 404);
+        return new JsonResponse('User not found', 404);
     }
 }
 
