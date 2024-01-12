@@ -304,7 +304,7 @@ class GameController extends AbstractController
             return new JsonResponse('Invalid choice', 400);
         }
 
-        return new JsonResponse('coucou');
+        return new JsonResponse('Game move processed successfully');
     }
 
     #[Route('/game/{id}', name: 'annuler_game', methods:['DELETE'])]
