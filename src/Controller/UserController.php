@@ -13,10 +13,11 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[Route('/user')]
 class UserController extends AbstractController
 {
-    #[Route('/users', name: 'get_list_of_users', methods:['GET'])]
-    public function getUserList(EntityManagerInterface $entityManager): JsonResponse
+    #[Route('', name: 'user_index', methods:['GET'])]
+    public function index(EntityManagerInterface $entityManager): JsonResponse
     {
         $data = $entityManager->getRepository(User::class)->findAll();
         return $this->json(
@@ -25,82 +26,82 @@ class UserController extends AbstractController
         );
     }
 
-    #[Route('/users', name: 'create_user', methods:['POST'])]
-    public function createUser(Request $request,EntityManagerInterface $entityManager): JsonResponse
+    #[Route('', name: 'user_create', methods:['POST'])]
+    public function create(Request $request,EntityManagerInterface $entityManager): JsonResponse
     {
-        if($request->getMethod() === 'POST'){
-            $data = json_decode($request->getContent(), true);
-            $form = $this->createFormBuilder()
-                ->add('nom', TextType::class, [
-                    'constraints'=>[
-                        new Assert\NotBlank(),
-                        new Assert\Length(['min'=>1, 'max'=>255])
-                    ]
-                ])
-                ->add('age', NumberType::class, [
-                    'constraints'=>[
-                        new Assert\NotBlank()
-                    ]
-                ])
-                ->getForm();
+        $data = json_decode($request->getContent(), true);
+        $form = $this->createFormBuilder()
+            ->add('nom', TextType::class, [
+                'constraints'=>[
+                    new Assert\NotBlank(),
+                    new Assert\Length(['min'=>1, 'max'=>255])
+                ]
+            ])
+            ->add('age', NumberType::class, [
+                'constraints'=>[
+                    new Assert\NotBlank()
+                ]
+            ])
+            ->getForm();
 
-            $form->submit($data);
+        $form->submit($data);
 
-            if($form->isValid())
-            {
-                if($data['age'] > 21){
-                    $user = $entityManager->getRepository(User::class)->findBy(['name'=>$data['name']]);
-                    if(count($user) === 0){
-                        $player = new User();
-                        $player->setName($data['name']);
-                        $player->setAge($data['age']);
-                        $entityManager->persist($player);
-                        $entityManager->flush();
-
-                        return $this->json(
-                                    $player,
-                                    201,
-                                    ['Content-Type' => 'application/json;charset=UTF-8']
-                                );                    
-                    }else{
-                        return new JsonResponse('Name already exists', 400);
-                    }
-                }else{
-                    return new JsonResponse('Wrong age', 400);
-                }
-            }else{
-                return new JsonResponse('Invalid form', 400);
-            }
-        }else{
-            return new JsonResponse('Wrong method', 405);
+        if(!($form->isValid())) {
+            return new JsonResponse('Invalid form', 400);
         }
+
+        if($data['age'] <= 21){
+            return new JsonResponse('Wrong age', 400);
+        }
+
+            $user = $entityManager->getRepository(User::class)->findBy(['name'=>$data['nom']]);
+            if(count($user) !== 0){
+                return new JsonResponse('Name already exists', 400);
+            }
+
+            $player = new User();
+            $player->setName($data['nom']);
+            $player->setAge($data['age']);
+            $entityManager->persist($user);
+            $entityManager->flush();
+
+            return $this->json(
+                        $user,
+                        201,
+                        ['Content-Type' => 'application/json;charset=UTF-8']
+                    ); 
     }
 
-    #[Route('/user/{id}', name: 'get_user_by_id', methods:['GET'])]
-    public function getUserById($id, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/{id}', name: 'user_show', methods:['GET'])]
+    public function show(int $id, EntityManagerInterface $entityManager): JsonResponse
     {
-        if(ctype_digit($id)){
-            $player = $entityManager->getRepository(User::class)->findBy(['id'=>$id]);
-            if(count($player) == 1){
-                return new JsonResponse(array('name'=>$player[0]->getName(), "age"=>$player[0]->getAge(), 'id'=>$player[0]->getId()), 200);
-            }else{
+
+            $user = $entityManager->getRepository(User::class)->find($id);
+            if (!$user) {
                 return new JsonResponse('Wrong id', 404);
             }
-        }
+            
+        return $this->json(
+            $user,
+            200,
+            ['Content-Type' => 'application/json;charset=UTF-8']
+        );
+
         return new JsonResponse('Wrong id', 404);
     }
 
-    #[Route('/user/{id}', name: 'update_user', methods:['PATCH'])]
-    public function updateUser(EntityManagerInterface $entityManager, $id, Request $request): JsonResponse
+    #[Route('/{id}', name: 'user_update', methods:['PATCH'])]
+    public function update(EntityManagerInterface $entityManager,int $id, Request $request): JsonResponse
     {
-        $player = $entityManager->getRepository(User::class)->findBy(['id'=>$id]);
+        $user = $entityManager->getRepository(User::class)->find($id);
 
+        if(!$user){
+            return new JsonResponse('Wrong id', 404);
+        }
 
-        if(count($player) == 1){
-            if($request->getMethod() == 'PATCH'){
                 $data = json_decode($request->getContent(), true);
                 $form = $this->createFormBuilder()
-                    ->add('name', TextType::class, array(
+                    ->add('nom', TextType::class, array(
                         'required'=>false
                     ))
                     ->add('age', NumberType::class, [
@@ -109,13 +110,17 @@ class UserController extends AbstractController
                     ->getForm();
 
                 $form->submit($data);
-                if($form->isValid()) {
+
+                if(!($form->isValid())) {
+                    return new JsonResponse('Invalid form', 400);
+                }
+
                     foreach($data as $key=>$value){
                         switch($key){
-                            case 'name':
-                                $user = $entityManager->getRepository(User::class)->findBy(['name'=>$data['name']]);
+                            case 'nom':
+                                $user = $entityManager->getRepository(User::class)->findBy(['nom'=>$data['name']]);
                                 if(count($user) === 0){
-                                    $player[0]->setName($data['name']);
+                                    $user[0]->setName($data['nom']);
                                     $entityManager->flush();
                                 }else{
                                     return new JsonResponse('Name already exists', 400);
@@ -123,7 +128,7 @@ class UserController extends AbstractController
                                 break;
                             case 'age':
                                 if($data['age'] > 21){
-                                    $player[0]->setAge($data['age']);
+                                    $user[0]->setAge($data['age']);
                                     $entityManager->flush();
                                 }else{
                                     return new JsonResponse('Wrong age', 400);
@@ -131,41 +136,30 @@ class UserController extends AbstractController
                                 break;
                         }
                     }
-                }else{
-                    return new JsonResponse('Invalid form', 400);
-                }
-            }else{
-                $data = json_decode($request->getContent(), true);
-                return new JsonResponse('Wrong method', 405);
-            }
 
-            return new JsonResponse(array('name'=>$player[0]->getName(), "age"=>$player[0]->getAge(), 'id'=>$player[0]->getId()), 200);
-        }else{
-            return new JsonResponse('Wrong id', 404);
-        }    
+            
+
+            return new JsonResponse(array('name'=>$user[0]->getName(), "age"=>$user[0]->getAge(), 'id'=>$user[0]->getId()), 200);
+
     }
 
-    #[Route('/user/{id}', name: 'delete_user_by_id', methods:['DELETE'])]
-    public function deleteUser($id, EntityManagerInterface $entityManager): JsonResponse | null
+    #[Route('/{id}', name: 'user_delete', methods:['DELETE'])]
+    public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse | null
     {
-        $player = $entityManager->getRepository(User::class)->findBy(['id'=>$id]);
-        if(count($player) == 1){
-            try{
-                $entityManager->remove($player[0]);
-                $entityManager->flush();
-
-                $alreadyExist = $entityManager->getRepository(User::class)->findBy(['id'=>$id]);
-    
-                if(!empty($alreadyExist)){
-                    throw new \Exception("User not deleted");
-                }else{
-                    return new JsonResponse('', 204);
-                }
-            }catch(\Exception $e){
-                return new JsonResponse($e->getMessage(), 500);
-            }
-        }else{
+        $user = $entityManager->getRepository(User::class)->find($id);
+        if(!$user) {
             return new JsonResponse('Wrong id', 404);
-        }    
+        }
+
+        $entityManager->remove($user);
+        $entityManager->flush();
+
+        $stillExist = $entityManager->getRepository(User::class)->find($id);
+
+        if(!empty($stillExist)){
+            return new \Exception("User not deleted", 500);
+        }
+        
+        return new JsonResponse('', 204);
     }
 }
