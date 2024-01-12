@@ -23,41 +23,6 @@ class GameController extends AbstractController
             headers: ['Content-Type' => 'application/json;charset=UTF-8']
         );
     }
-
-    #[Route('/games', name: 'create_game', methods:['POST'])]
-    public function launchGame(Request $request, EntityManagerInterface $entityManager): JsonResponse
-    {
-        $currentUserId = $request->headers->get('X-User-Id');
-
-        if($currentUserId !== null){
-
-            if(ctype_digit($currentUserId) === false){
-                return new JsonResponse('User not found', 401);
-            }
-
-            $currentUser = $entityManager->getRepository(User::class)->find($currentUserId);
-
-            if($currentUser === null){
-                return new JsonResponse('User not found', 401);
-            }
-
-            $new_game = new Game();
-            $new_game->setState('pending');
-            $new_game->setPlayerLeft($currentUser);
-
-            $entityManager->persist($new_game);
-
-            $entityManager->flush();
-
-            return $this->json(
-                $new_game,
-                201,
-                headers: ['Content-Type' => 'application/json;charset=UTF-8']
-            );
-        }else{
-            return new JsonResponse('User not found', 401);
-        }
-    }
     #[Route('/games', name: 'create_game', methods: ['POST'])]
 public function launchGame(Request $request, EntityManagerInterface $entityManager): JsonResponse
 {
